@@ -1,0 +1,351 @@
+# R-studio script to replicate the following blog:
+#https://450chairs.com/2018/06/25/пальцем-в-рейтинг/
+
+#http://ukraine-elections.com.ua is a catalog of all electoral polls in Ukraine
+#We gathered data from this website and created a file "ukraine-elections.csv" 
+
+#Some analyses and visuals for Tymoshenko's presidential polls are produced
+
+#For more information contact us at the450chairs@gmail.com
+#Last update July 2 2018
+
+#To esnure that cyrillic language reads well
+Sys.setlocale(,"ru_RU")
+"ru_RU/ru_RU/ru_RU/C/ru_RU/C"
+test = c("Це текст написаний кирилицею")
+test
+
+#Set your working directory 
+setwd("")
+
+#Open the data
+mydata <- read.csv("ukraine-elections.csv")
+
+#Alternatively, open your file by browsing your file 
+#mydata<-read.table(file.choose()) 
+
+#Chech the variables
+str(mydata)
+dim(mydata)
+names(mydata)
+
+#Check the type (method) of a survey
+table(mydata$method)
+
+#Selecting only face to face surveys
+mydata <- mydata[mydata$method == "личное интервью", ]
+dim(mydata)
+
+#Variables as dates
+mydata$start_date <- as.Date(substring(mydata$period, 1, 10), "%d.%m.%Y")
+mydata$end_date <- as.Date(substring(mydata$period, 14, 23), "%d.%m.%Y")
+mydata$n_days <- as.numeric(mydata$end_date - mydata$start_date)
+
+summary(mydata$n_days)
+hist(mydata$n_days)
+
+mydata$period[mydata$n_days <0] 
+mydata$link[mydata$n_days <0] 
+
+#Cleaning the data #1
+mydata$period <- as.character(mydata$period)
+mydata$period[mydata$period == "04.07.2015 - 14.05.2015"] <- "04.07.2015 - 14.07.2015"
+mydata$period[mydata$period == "20.07.2017 - 29.07.2014"] <- "20.07.2017 - 29.07.2017"
+mydata$period[mydata$period == "26.03.2015 - 11.03.2015"] <- "26.02.2015 - 11.03.2015"
+
+#Repeat with new dates
+mydata$start_date <- as.Date(substring(mydata$period, 1, 10), "%d.%m.%Y")
+mydata$end_date <- as.Date(substring(mydata$period, 14, 23), "%d.%m.%Y")
+mydata$n_days <- as.numeric(mydata$end_date - mydata$start_date)
+
+summary(mydata$n_days)
+hist(mydata$n_days)
+
+#Select only Tymoshenko
+colnames(mydata)[grep("Тимошенко", colnames(mydata))] 
+
+mydata_t <- mydata[, c("link", "company", "votes.Тимошенко", "start_date",
+                       "end_date", "n_days")]
+
+mydata_t$tymoshenko <- mydata_t$votes.Тимошенко
+mydata_t <- mydata_t[!is.na(mydata_t$tymoshenko), ]
+dim(mydata_t) #134 surveys
+
+#Recode names
+sort(table(mydata_t$company))
+
+mydata_t$company <- as.character(mydata_t$company)
+mydata_t$company_recoded <- mydata_t$company
+
+#Dealing with some unpleasant characters 
+mydata_t$company_recoded <- sub('"', '', mydata_t$company_recoded) #deleting "s from the string
+mydata_t$company_recoded <- sub('”', '', mydata_t$company_recoded) #deleting ”s from the string
+mydata_t$company_recoded <- sub("'", '', mydata_t$company_recoded) #deleting ”s from the string
+
+#Recoding #1 Rating
+mydata_t$company_recoded[mydata_t$company_recoded == "Социологическая группа «Рейтинг»"] <- "Рейтинг"
+mydata_t$company_recoded[mydata_t$company_recoded == "Социологическая группа «Рейтинг» "] <- "Рейтинг"
+mydata_t$company_recoded[mydata_t$company_recoded == "Социологическая группа Рейтинг"] <- "Рейтинг"
+mydata_t$company_recoded[mydata_t$company_recoded == "Социологическая группа «Рейтинг» по заказу IRI"] <- "Рейтинг"
+
+#Recoding #2 KMIS
+mydata_t$company_recoded[mydata_t$company_recoded == "Киевский Международный Институт Социологии КМИС"] <- "КМІС"
+mydata_t$company_recoded[mydata_t$company_recoded == "Киевский Международный Институт Социологии (КМИС) "] <- "КМІС"
+mydata_t$company_recoded[mydata_t$company_recoded == "Киевский международный институт социологии (КМИС)"] <- "КМІС"
+mydata_t$company_recoded[mydata_t$company_recoded == "Киевский Международный Институт Социологии (КМИС)"] <- "КМІС"
+
+#Recoding #3 Razumkov
+mydata_t$company_recoded[mydata_t$company_recoded == "Центр Разумкова"] <- "Разумков"
+
+#Recoding #4 Socis
+mydata_t$company_recoded[mydata_t$company_recoded == "Центр социальных и маркетинговых исследований СОЦИС"] <- "SOCIS"
+mydata_t$company_recoded[mydata_t$company_recoded == "Центр социальных и маркетинговых исследований SOCIS"] <- "SOCIS"
+mydata_t$company_recoded[mydata_t$company_recoded == "Центр социальных и маркетинговых исследований SOCIS по заказу РАНД"] <- "SOCIS"
+
+#Recoding #5 Still have problems with " symbol. Rude solution
+mydata_t$company_recoded[grep("СОЦИС", mydata_t$company_recoded)] <- "SOCIS"
+mydata_t$company_recoded[grep("SOCIS", mydata_t$company_recoded)] <- "SOCIS"
+
+#Recoding #6 Sofia
+mydata_t$company_recoded[mydata_t$company_recoded == "Центр социальных исследований «София»"] <- "Софія"
+
+#Recoding #7 RB
+mydata_t$company_recoded[mydata_t$company_recoded == "Rеsearch & Branding Group"] <- "RB"
+mydata_t$company_recoded[mydata_t$company_recoded == "Research & Branding Group"] <- "RB"
+mydata_t$company_recoded[mydata_t$company_recoded == "Research and Branding Group"] <- "RB"
+
+#Recoding #8 GFK
+mydata_t$company_recoded[mydata_t$company_recoded == "GFK Ukraine по заказу ТСН"] <- "RB"
+mydata_t$company_recoded[mydata_t$company_recoded == "GfK Ukraine по заказу интернет-холдинга «Обозреватель»"] <- "RB"
+mydata_t$company_recoded[mydata_t$company_recoded == "GfK Ukraine"] <- "RB"
+
+#Recoding #9 Others
+mydata_t$company_recoded[mydata_t$company_recoded == "Украинский Институт Будушего"] <- "Інститут Майбутнього"
+mydata_t$company_recoded[mydata_t$company_recoded == "Украинский институт будущего"] <- "Інститут Майбутнього"
+mydata_t$company_recoded[mydata_t$company_recoded == "Украинское демократическое коло"] <- "Демократичне коло"
+mydata_t$company_recoded[mydata_t$company_recoded == "Українське демократичне коло"] <- "Демократичне коло"
+mydata_t$company_recoded[mydata_t$company_recoded == "Українське демократичне коло (опрос по Киеву)"] <- "Демократичне коло"
+mydata_t$company_recoded[mydata_t$company_recoded == "Институт Горшенина"] <- "Інститут Горшеніна"
+mydata_t$company_recoded[mydata_t$company_recoded == "Исследовательское агентство Q&Q Research"] <- "QQ"
+mydata_t$company_recoded[mydata_t$company_recoded == "Центр «Социальная перспектива»"] <- "ЦСП"
+mydata_t$company_recoded[mydata_t$company_recoded == "Передовые Правовые Инициативы"] <- "ППІ"
+
+sort(table(mydata_t$company_recoded))
+
+length(unique(mydata_t$company_recoded))
+length(unique(mydata_t$company))
+
+#Overwrite collaborations as separate entities
+sort(table(mydata_t$company))
+mydata_t$company_recoded2 <- mydata_t$company_recoded
+
+#Socis and... == ...and Socis
+mydata_t$company_recoded2[mydata_t$company == "Социс и Рейтинг по заказу АП"] <- "SOCIS і Рейтинг"
+mydata_t$company_recoded2[mydata_t$company == "СОЦИС и РЕЙТИНГ"] <- "SOCIS і Рейтинг"
+mydata_t$company_recoded2[mydata_t$company == "«Социс» и «Рейтинг»"] <- "SOCIS і Рейтинг"
+mydata_t[mydata_t$company_recoded2 == "SOCIS і Рейтинг", ]
+
+mydata_t$company_recoded2[mydata_t$company == "СОЦИС, Рейтинг, КМИС"] <- "SOCIS і КМІС і Рейтинг"
+mydata_t$company_recoded2[mydata_t$company == "Социс, КМИС, Рейтинг и Центр Разумкова при поддержке КИУ"] <- "SOCIS і КМІС і Рейтинг і Разумков"
+mydata_t$company_recoded2[mydata_t$company == "«СОЦИС, КМИС, Рейтинг и Центр Разумкова"] <- "SOCIS і КМІС і Рейтинг і Разумков"
+
+#Rating and ... == ... and Rating 
+mydata_t$company_recoded2[mydata_t$company == "Центра Разумкова и соц.группа Рейтинг"] <- "Разумков і Рейтинг"
+
+#FDI and Razumkov == Razumkov and FDI
+mydata_t$company_recoded2[mydata_t$company == "Фонд Дем.Инициативы и Центр Разумкова"] <- "ФДІ і Разумков"
+mydata_t$company_recoded2[mydata_t$company == "Фонд Деминициативы и Центр Разумкова"] <- "ФДІ і Разумков"
+mydata_t$company_recoded2[mydata_t$company == "Центр Разумкова и фонд «Демократические инициативы»"] <- "ФДІ і Разумков"
+mydata_t$company_recoded2[mydata_t$company == "Центр Разумкова совместно с фондом Демократические инициативы"] <- "ФДІ і Разумков"
+mydata_t$company_recoded2[mydata_t$company == "Фонд «Демократические инициативы» и Центр Разумкова"] <- "ФДІ і Разумков"
+mydata_t$company_recoded2[mydata_t$company == "Фонд Демократические инициативы совместно с Центром Разумкова"] <- "ФДІ і Разумков"
+
+#Yaremenko and... == ... and Yaremenko
+mydata_t$company_recoded2[mydata_t$company == "Институт социсследований им. А.Ярёменко и Социальный мониторинг"] <- "УІСД і СМ"
+mydata_t$company_recoded2[mydata_t$company == "УИСИ и Социальный мониторинг"] <- "УІСД і СМ"
+mydata_t$company_recoded2[mydata_t$company == "Социальный мониторинг и Украинский институт социсследований А.Яременко"] <- "УІСД і СМ"
+mydata_t$company_recoded2[mydata_t$company == "Социальный мониторинг и институт социсследований А.Яременко"] <- "УІСД і СМ"
+mydata_t$company_recoded2[mydata_t$company == "Социальный мониторинг, УИСИ А.Яременко, ИАП"] <- "УІСД і СМ і ІАП"
+mydata_t$company_recoded2[mydata_t$company == "ИАП, УИСИ, Социальный мониторинг"] <- "УІСД і СМ і ІАП"
+mydata_t$company_recoded2[mydata_t$company == "ИАП, УИСИ и «Социальный мониторинг»"] <- "УІСД і СМ і ІАП"
+mydata_t$company_recoded2[mydata_t$company == "Центр Разумкова, УИСИ и Социальный мониторинг по заказу ИГЛС"] <- "Разумков і УІСД і СМ"
+
+#KIIS and ... == ... and KIIS
+mydata_t$company_recoded2[mydata_t$company == "Фонд «Демократические инициативы» и КМИС"] <- "ФД і КМІС"
+mydata_t$company_recoded2[mydata_t$company == "Центр Разумкова, УИСИ и Социальный мониторинг по заказу ИГЛС"] <- "Разумков і УІСД і СМ"
+
+#Others
+mydata_t$company_recoded2[mydata_t$company == "АПК «Перспектива» и ИЦ «Имидж-Контроль»"] <- "П і ІК"
+mydata_t$company_recoded2[mydata_t$company == "Институт анализа и прогнозирования и  аналитическая группа Социопрогноз"] <- "Соціопрогноз"
+mydata_t$company_recoded2[mydata_t$company == "Институт социальных технологий Социополис"] <- "Соціополіс"
+
+#Select surveys one behalf of another agency
+mydata_t$behalf <- 0
+mydata_t$behalf[grep("заказу", mydata_t$company)] <- 1
+mydata_t$behalf[grep("поддержке", mydata_t$company)] <- 1
+table(mydata_t$behalf)
+mydata_t[mydata_t$behalf == 1,]
+
+#Select if collaboration
+mydata_t$collaboration <- 0
+mydata_t$collaboration[grep(" і ", mydata_t$company_recoded2)] <- 1
+table(mydata_t$collaboration)
+mydata_t[mydata_t$collaboration == 1,]
+
+#Delete Internet polls, regional polls
+mydata_t <- mydata_t[mydata_t$company != "Центр Разумкова, УИСИ и Социальный мониторинг по заказу ИГЛС", ]
+mydata_t <- mydata_t[mydata_t$company != "КМИС (опрос по юго-востоку Украины)", ]
+mydata_t <- mydata_t[mydata_t$company != "Consulting Agency F5 по заказу НикВести", ]
+mydata_t <- mydata_t[mydata_t$company != "Объединенный пул социологических служб Харьковской обл \"Слобожанский рейтинг\"", ]
+mydata_t <- mydata_t[mydata_t$company != "Українське демократичне коло (опрос по Киеву)", ]
+
+
+hist(mydata_t$tymoshenko)
+summary(mydata_t$tymoshenko)
+
+#Check outliers
+mydata_t$link[mydata_t$tymoshenko == 2.4]
+mydata_t <- mydata_t[mydata_t$tymoshenko != 2.4, ]
+
+hist(mydata_t$tymoshenko)
+summary(mydata_t$tymoshenko)
+
+mydata_t$link[mydata_t$tymoshenko == 3.7]
+mydata_t$company[mydata_t$tymoshenko == 3.7] #seems legit
+
+#another strategy for outliers
+summary(mydata_t$tymoshenko); sd(mydata_t$tymoshenko)
+mydata_t$link[mydata_t$tymoshenko <7]
+mydata_t$company[mydata_t$tymoshenko <7]
+
+mydata_t <- mydata_t[mydata_t$link != "https://news.pn/ru/public/192870", ] #mykolaiv
+mydata_t <- mydata_t[mydata_t$link != "http://new.activegroup.com.ua/?p=2950", ] #cities
+mydata_t <- mydata_t[mydata_t$link != "ttp://www.kiis.com.ua/?lang=ukr&cat=reports&id=541&page=1", ] #mykolaiv
+mydata_t <- mydata_t[mydata_t$link != "https://www.slideshare.net/SocioStream/sociostream-june-2016-63640491", ] #cities
+mydata_t <- mydata_t[mydata_t$link != "http://www.slideshare.net/SocioStream/sociostream-june-2016-63640491", ] #cities
+
+hist(mydata_t$tymoshenko)
+summary(mydata_t$tymoshenko); sd(mydata_t$tymoshenko)
+
+mydata_t$link[mydata_t$tymoshenko > 13]
+mydata_t$company[mydata_t$tymoshenko > 13]
+
+mydata_t <- mydata_t[mydata_t$link != "https://znaj.ua/ru/capital/kyevlyane-nazvaly-budushego-prezydenta-y-partyyu-lydera", ] #kyiv
+mydata_t <- mydata_t[mydata_t$link != "http://www.rbc.ua/rus/news/society/menee-poloviny-ukraintsev-schitayut-chto-vybory-v-radu-izmenyat-05092014112500", ] #IDPs
+
+hist(mydata_t$tymoshenko)
+summary(mydata_t$tymoshenko); sd(mydata_t$tymoshenko)
+
+#Another strategy for outliers
+summary(mydata_t$n_days)
+table(mydata_t$n_days)
+
+mydata_t$link[mydata_t$n_days <=4]
+mydata_t$n_days[mydata_t$n_days <= 3] <- NA
+#
+dim(mydata_t) #N = 118 observations
+plot(mydata_t$n_days, mydata_t$tymoshenko)
+cor(mydata_t$n_days, mydata_t$tymoshenko, use = "complete.obs")
+
+#New variables for years, months, quarters 
+library(zoo)
+
+mydata_t$year <- format(mydata_t$start_date,"%Y")
+mydata_t$month <- format(mydata_t$start_date,"%m")
+mydata_t$yerm <- format(mydata_t$start_date,"%Y%m")
+mydata_t$qtr <- as.yearqtr(mydata_t$yerm , "%Y%m")
+
+#Check stats per periods
+mydata_t$id <- 1
+
+tapply(mydata_t$tymoshenko, mydata_t$year, mean)
+tapply(mydata_t$tymoshenko, mydata_t$year, sd)
+tapply(mydata_t$id, mydata_t$year, sum)
+
+tapply(mydata_t$tymoshenko, mydata_t$qtr, mean)
+tapply(mydata_t$tymoshenko, mydata_t$qtr, sd)
+tapply(mydata_t$id, mydata_t$qtr, sum)
+
+# 
+mydata_t <- mydata_t[mydata_t$year != "2011", ] #only 4 surveys in 2011
+
+mydata_t$qtr_cat <- NA
+mydata_t$qtr_cat[grep("Q1", mydata_t$qtr)] <- "Q1"
+mydata_t$qtr_cat[grep("Q2", mydata_t$qtr)] <- "Q2"
+mydata_t$qtr_cat[grep("Q3", mydata_t$qtr)] <- "Q3"
+mydata_t$qtr_cat[grep("Q4", mydata_t$qtr)] <- "Q4"
+table(mydata_t$qtr_cat)
+
+#Check some plots
+boxplot(tymoshenko~year,data=mydata_t, main="", 
+        xlab="", ylab="")
+
+boxplot(tymoshenko~qtr, data=mydata_t, main="", 
+        xlab="", ylab="")
+
+
+tapply(mydata_t$tymoshenko, mydata_t$year, mean)
+tapply(mydata_t$tymoshenko, mydata_t$year, sd)
+
+#Variables for means and SDs
+mydata_t$sd.y <- 0
+mydata_t$sd.y[mydata_t$year == "2012"] <- 2.16
+mydata_t$sd.y[mydata_t$year == "2013"] <- 3.01
+mydata_t$sd.y[mydata_t$year == "2014"] <- 3.21
+mydata_t$sd.y[mydata_t$year == "2015"] <- 2.75
+mydata_t$sd.y[mydata_t$year == "2016"] <- 2.18
+mydata_t$sd.y[mydata_t$year == "2017"] <- 2.15
+mydata_t$sd.y[mydata_t$year == "2018"] <- 2.31
+
+mydata_t$mean.y <- 0
+mydata_t$mean.y[mydata_t$year == "2012"] <- 12.81
+mydata_t$mean.y[mydata_t$year == "2013"] <- 12.02
+mydata_t$mean.y[mydata_t$year == "2014"] <- 10.14
+mydata_t$mean.y[mydata_t$year == "2015"] <- 7.96
+mydata_t$mean.y[mydata_t$year == "2016"] <- 10.14
+mydata_t$mean.y[mydata_t$year == "2017"] <- 10.65
+mydata_t$mean.y[mydata_t$year == "2018"] <- 10.70
+
+#Difference between Tymoshenko and Mean(Tymoshenko)
+mydata_t$diff_1 <- mydata_t$tymoshenko - mydata_t$mean
+
+#New variable using cyrillic for deviations 
+mydata_t$тренд <- "тренд"
+mydata_t$тренд[abs(mydata_t$diff_1) > mydata_t$sd] <- "одне відхилення"
+mydata_t$тренд[abs(mydata_t$diff_1) > 2*(mydata_t$sd)] <- "два відхилення"
+
+#Plots
+library(ggplot2)
+
+BlANK.FORMAT = theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        axis.line = element_line(),
+        text = element_text(family = 'Times'))
+
+#Plot 1
+p1 <- ggplot(mydata_t, aes(x=as.character(qtr), y=tymoshenko, 
+                           label = company_recoded2)) + 
+  geom_point() + BlANK.FORMAT +
+  geom_label(aes(fill = factor(тренд)), colour = "white", size = 3)+ 
+  theme(legend.position = "bottom") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  labs(x = "Квартал", y = "Президентський рейтинг Тимошенко") 
+
+#Plot 2
+p2 <- ggplot(mydata_t, aes(x=as.character(qtr), y=tymoshenko, 
+                           label = company_recoded2)) + 
+  BlANK.FORMAT +
+  geom_text(check_overlap = TRUE, size = 3, aes(colour = factor(тренд))) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  theme(legend.position = "top") +
+  labs(x = "Квартал", y = "Президентський рейтинг Тимошенко", 
+       color = "Відхилення від річного середнього") 
+
+p1
+p2
+
+jpeg("PlotTymoshenko.jpeg", width = 1000)
+plot(p2)
+dev.off()
