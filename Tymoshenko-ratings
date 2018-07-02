@@ -342,6 +342,19 @@ p2 <- ggplot(mydata_t, aes(x=as.character(qtr), y=tymoshenko,
   theme(legend.position = "top") +
   labs(x = "Квартал", y = "Президентський рейтинг Тимошенко", 
        color = "Відхилення від річного середнього") 
+       
+#Plot 3
+p3 <- ggplot(mydata_t, aes(x=as.character(qtr), y=tymoshenko, color = factor(тренд))) +  
+                          # label = company_recoded2)) + 
+  BlANK.FORMAT +
+  geom_point() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  theme(legend.position = "top") +
+  labs(x = "Квартал", y = "Президентський рейтинг Тимошенко", 
+       color = "Відхилення від річного середнього") 
+p1
+p2
+p3
 
 p1
 p2
