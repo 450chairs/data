@@ -1,4 +1,4 @@
-# R-studio script to replicate the following blog:
+#R-studio script to replicate the following blog:
 #https://450chairs.com/2018/06/25/пальцем-в-рейтинг/
 
 #http://ukraine-elections.com.ua is a catalog of all electoral polls in Ukraine
@@ -7,9 +7,9 @@
 #Some analyses and visuals for Tymoshenko's presidential polls are produced
 
 #For more information contact us at the450chairs@gmail.com
-#Last update July 2 2018
+#################################################################################
 
-#To esnure that cyrillic language reads well
+#Cyrillic language 
 Sys.setlocale(,"ru_RU")
 "ru_RU/ru_RU/ru_RU/C/ru_RU/C"
 test = c("Це текст написаний кирилицею")
