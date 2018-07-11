@@ -62,7 +62,7 @@ hist(data$n_days)
 # Select only Tymoshenko
 colnames(data)[grep("Тимошенко", colnames(data))]
 
-data_t <- data[, c("link", "company", "votes.Тимошенко", "start_date", "end_date", "n_days")]
+data_t <- data[, c("link", "company", "votes.Тимошенко", "start_date", "end_date", "n_days", "sample")]
 names(data_t)[grepl("Тимошенко", names(data_t))] <- "tymoshenko"
 data_t <- data_t[!is.na(data_t$tymoshenko), ]
 dim(data_t) # 134 surveys
@@ -241,15 +241,29 @@ plot_ly(type = 'scatter', mode = 'markers', data = data_t,
         y = ~tymoshenko,
         color = ~as.factor(trend),
         symbol = ~collaboration,
+        size = ~n_days,
         symbols = c('circle','x'),
         text = ~paste("Рейтинг: ", tymoshenko, '<br>Компанія:', company_recoded),
-        colors = pal,
-        marker = list(size = 8)
+        colors = pal
         ) %>%
   layout(legend = list(orientation = 'h'),
          xaxis = list(title = "Рік та квартал"),
          yaxis = list(title = "Президентський рейтинг Тимошенко"))
-layout()
+sort(data_t$sample)
+
+plot_ly(type = 'scatter', mode = 'markers', data = data_t[data_t$sample <= 6200,],
+        x = ~as.character(qtr),
+        y = ~tymoshenko,
+        color = ~as.factor(trend),
+        symbol = ~collaboration,
+        size = ~sample,
+        symbols = c('circle','x'),
+        text = ~paste("Рейтинг: ", tymoshenko, '<br>Компанія:', company_recoded),
+        colors = pal
+) %>%
+  layout(legend = list(orientation = 'h'),
+         xaxis = list(title = "Рік та квартал"),
+         yaxis = list(title = "Президентський рейтинг Тимошенко"))
 
 ## Ggplot plots
 
